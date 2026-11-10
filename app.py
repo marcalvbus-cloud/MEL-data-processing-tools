@@ -13,7 +13,17 @@ col_izq, col_centro, col_der = st.columns([1, 8, 1])
 with col_centro:
     st.image("assets/banner.jpg", use_container_width=True)
 
-st.subheader("TONELAJE_PALAS | Tonelaje diario por pala")
+st.markdown("### Seleccionar herramienta de procesamiento")
+
+herramienta = st.selectbox(
+    "Herramienta",
+    [
+        "Seleccione una herramienta...",
+        "TONELAJE_PALAS"
+    ]
+)
+
+st.divider()
 
 st.write(
     "Carga el archivo base MD, selecciona un rango de fechas y obtén "
