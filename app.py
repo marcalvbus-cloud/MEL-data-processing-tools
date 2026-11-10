@@ -28,6 +28,16 @@ with col_centro:
 
 
 # =========================================================
+# ESTADO DEL SELECTOR
+# =========================================================
+
+if "herramienta_seleccionada" not in st.session_state:
+    st.session_state.herramienta_seleccionada = (
+        "Seleccione una herramienta..."
+    )
+
+
+# =========================================================
 # SELECTOR DE HERRAMIENTAS
 # =========================================================
 
@@ -38,7 +48,8 @@ herramienta = st.selectbox(
     [
         "Seleccione una herramienta...",
         "TONELAJE_PALAS"
-    ]
+    ],
+    key="herramienta_seleccionada"
 )
 
 
@@ -46,8 +57,19 @@ herramienta = st.selectbox(
 # EJECUCIÓN DE HERRAMIENTAS
 # =========================================================
 
-if herramienta == "TONELAJE_PALAS":
+if herramienta != "Seleccione una herramienta...":
 
     st.divider()
 
-    mostrar_tonelaje_palas()
+    # Botón para regresar al menú
+    if st.button(
+        "← Back to menu",
+        type="secondary"
+    ):
+        st.session_state.herramienta_seleccionada = (
+            "Seleccione una herramienta..."
+        )
+        st.rerun()
+
+    if herramienta == "TONELAJE_PALAS":
+        mostrar_tonelaje_palas()
