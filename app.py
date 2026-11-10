@@ -8,7 +8,7 @@ st.set_page_config(
     layout="wide"
 )
 
-st.image("assets/banner.jpg", use_container_width=True)
+st.image("assets/banner.jpg", width=1100)
 
 st.subheader("TONELAJE_PALAS | Tonelaje diario por pala")
 
