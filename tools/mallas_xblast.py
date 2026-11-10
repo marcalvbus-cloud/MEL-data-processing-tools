@@ -1,18 +1,14 @@
 import io
 import re
-
 import pandas as pd
 import streamlit as st
 
 
-def convertir_pulgadas_a_mm(valor):
-    """
-    Convierte valores como:
-    6 1/2  -> 165 mm
-    10 5/8 -> 270 mm
-    6.5    -> 165 mm
-    """
+# =========================================================
+# CONVERSIÓN DE PULGADAS A MILÍMETROS
+# =========================================================
 
+def convertir_pulgadas_a_mm(valor):
     if pd.isna(valor):
         return None
 
@@ -21,44 +17,44 @@ def convertir_pulgadas_a_mm(valor):
     if not texto:
         return None
 
-    # Normalizar espacios
     texto = re.sub(r"\s+", " ", texto)
 
     try:
-        # Valor decimal directo
         pulgadas = float(texto.replace(",", "."))
         return round(pulgadas * 25.4)
-
     except ValueError:
         pass
 
-    pulgadas = 0.0
-    partes = texto.split(" ")
-
     try:
-        # Parte entera
-        pulgadas = float(partes[0].replace(",", "."))
+        partes = texto.split()
 
-# Parte fraccionaria, por ejemplo 1/2 o 5/8
-     if len(partes) > 1 and "/" in partes:
-          numerador, denominador = partes[1].split("/", 1)
-            numerador = float(numerador)
-            denominador = float(denominador)
+        pulgadas = float(
+            partes[0].replace(",", ".")
+        )
 
-            if denominador != 0:
-                pulgadas += numerador / denominador
+        if len(partes) > 1:
+            fraccion = partes[1]
+
+            if "/" in fraccion:
+                numerador, denominador = fraccion.split("/", 1)
+
+                numerador = float(numerador)
+                denominador = float(denominador)
+
+                if denominador != 0:
+                    pulgadas += numerador / denominador
+
         return round(pulgadas * 25.4)
 
     except (ValueError, IndexError):
         return None
 
 
-def leer_csv_xblast(archivo):
-    """
-    Lee el CSV intentando distintas codificaciones y detectando
-    automáticamente el separador.
-    """
+# =========================================================
+# LECTURA DEL CSV
+# =========================================================
 
+def leer_csv_xblast(archivo):
     contenido = archivo.getvalue()
 
     codificaciones = [
@@ -71,11 +67,10 @@ def leer_csv_xblast(archivo):
     ultimo_error = None
 
     for codificacion in codificaciones:
-
         try:
             texto = contenido.decode(codificacion)
 
-            return pd.read_csv(
+            df = pd.read_csv(
                 io.StringIO(texto),
                 sep=None,
                 engine="python",
@@ -83,57 +78,61 @@ def leer_csv_xblast(archivo):
                 skipinitialspace=True
             )
 
+            return df
+
         except Exception as error:
             ultimo_error = error
 
     raise ValueError(
-        f"No fue posible leer el archivo CSV: {ultimo_error}"
+        f"No fue posible leer el CSV: {ultimo_error}"
+    )
+
+
+# =========================================================
+# BUSCAR COLUMNAS
+# =========================================================
+
+def normalizar_nombre(texto):
+    return (
+        str(texto)
+        .strip()
+        .lower()
+        .replace("º", "°")
     )
 
 
 def buscar_columna(columnas, alternativas):
-    """
-    Busca una columna aunque el encabezado tenga pequeñas
-    variaciones de codificación, mayúsculas o espacios.
-    """
-
-    columnas_limpias = {
-        str(columna).strip().lower(): columna
+    mapa = {
+        normalizar_nombre(columna): columna
         for columna in columnas
     }
 
     for alternativa in alternativas:
+        clave = normalizar_nombre(alternativa)
 
-        alternativa_limpia = alternativa.strip().lower()
-
-        if alternativa_limpia in columnas_limpias:
-            return columnas_limpias[alternativa_limpia]
+        if clave in mapa:
+            return mapa[clave]
 
     return None
 
 
-def procesar_malla_xblast(df):
-    """
-    Replica el procesamiento de la macro VBA usando nombres
-    de columnas, en vez de posiciones fijas.
-    """
+# =========================================================
+# PROCESAMIENTO X-BLAST
+# =========================================================
 
+def procesar_malla_xblast(df):
     df = df.copy()
 
-    # Limpiar nombres de columnas
     df.columns = [
         str(columna).strip()
         for columna in df.columns
     ]
 
-    # Identificar columnas, incluyendo posibles problemas
-    # de codificación en N°POZO
     col_pozo = buscar_columna(
         df.columns,
         [
             "N°POZO",
             "NºPOZO",
-            "NРPOZO",
             "NPOZO",
             "POZO"
         ]
@@ -141,18 +140,12 @@ def procesar_malla_xblast(df):
 
     col_este = buscar_columna(
         df.columns,
-        [
-            "COORDENADA ESTE",
-            "Coordenada Este"
-        ]
+        ["COORDENADA ESTE"]
     )
 
     col_norte = buscar_columna(
         df.columns,
-        [
-            "COORDENADA NORTE",
-            "Coordenada Norte"
-        ]
+        ["COORDENADA NORTE"]
     )
 
     col_collar = buscar_columna(
@@ -163,11 +156,6 @@ def procesar_malla_xblast(df):
     col_length = buscar_columna(
         df.columns,
         ["Length"]
-    )
-
-    col_layer = buscar_columna(
-        df.columns,
-        ["Layer Name"]
     )
 
     col_blast = buscar_columna(
@@ -190,12 +178,12 @@ def procesar_malla_xblast(df):
         ["Spacing"]
     )
 
-    col_drill_rig = buscar_columna(
+    col_drill = buscar_columna(
         df.columns,
         ["Drill Rig"]
     )
 
-    columnas_obligatorias = {
+    requeridas = {
         "N°POZO": col_pozo,
         "COORDENADA ESTE": col_este,
         "COORDENADA NORTE": col_norte,
@@ -205,66 +193,73 @@ def procesar_malla_xblast(df):
         "Subdrill Length": col_subdrill,
         "Burden": col_burden,
         "Spacing": col_spacing,
-        "Drill Rig": col_drill_rig
+        "Drill Rig": col_drill
     }
 
     faltantes = [
         nombre
-        for nombre, columna in columnas_obligatorias.items()
+        for nombre, columna in requeridas.items()
         if columna is None
     ]
 
     if faltantes:
-
         raise ValueError(
-            "Faltan las siguientes columnas requeridas: "
+            "Faltan columnas requeridas: "
             + ", ".join(faltantes)
         )
 
     filas_originales = len(df)
 
-    # Convertir Coordenada Este a número.
-    # Esto permite eliminar:
-    # - encabezados repetidos
-    # - filas vacías
-    # - filas que no contienen datos reales
-    coordenada_este_numerica = pd.to_numeric(
+    # -----------------------------------------------------
+    # ELIMINAR ENCABEZADOS REPETIDOS Y FILAS VACÍAS
+    # -----------------------------------------------------
+
+    este_numerico = pd.to_numeric(
         df[col_este],
         errors="coerce"
     )
 
     df = df[
-        coordenada_este_numerica.notna()
+        este_numerico.notna()
     ].copy()
 
     filas_eliminadas = filas_originales - len(df)
 
-    # Limpiar Blast Name y número de pozo
-    blast_name = (
+    # -----------------------------------------------------
+    # CREAR ID POZO
+    # Blast Name + "_" + N°POZO
+    # -----------------------------------------------------
+
+    blast = (
         df[col_blast]
         .astype(str)
         .str.strip()
         .str.replace(r"\.0$", "", regex=True)
     )
 
-    numero_pozo = (
+    pozo = (
         df[col_pozo]
         .astype(str)
         .str.strip()
         .str.replace(r"\.0$", "", regex=True)
     )
 
-    # Crear ID con guion bajo
-    id_pozo = blast_name + "_" + numero_pozo
+    id_pozo = blast + "_" + pozo
 
-    # Conversión de pulgadas a milímetros
-    drill_rig_mm = (
-        df[col_drill_rig]
+    # -----------------------------------------------------
+    # DRILL RIG PULGADAS -> MM
+    # -----------------------------------------------------
+
+    drill_mm = (
+        df[col_drill]
         .apply(convertir_pulgadas_a_mm)
         .astype("Int64")
     )
 
-    # Construir resultado final en el orden requerido
+    # -----------------------------------------------------
+    # TABLA FINAL
+    # -----------------------------------------------------
+
     resultado = pd.DataFrame({
         "ID POZO": id_pozo,
         "COORDENADA ESTE": pd.to_numeric(
@@ -295,33 +290,23 @@ def procesar_malla_xblast(df):
             df[col_spacing],
             errors="coerce"
         ),
-        "Drill Rig (mm)": drill_rig_mm,
+        "Drill Rig (mm)": drill_mm,
         "Taco": "",
         "Grupo": ""
     })
 
-    # Eliminar registros sin identificador válido
-    resultado = resultado[
-        resultado["ID POZO"].notna()
-        &
-        ~resultado["ID POZO"].isin(
-            ["nan_nan", "_", "None_None"]
-        )
-    ].copy()
-
-    resultado.reset_index(
-        drop=True,
-        inplace=True
+    resultado = resultado.reset_index(
+        drop=True
     )
 
     return resultado, filas_eliminadas
 
 
-def generar_excel(resultado):
-    """
-    Genera el archivo Excel descargable.
-    """
+# =========================================================
+# GENERAR EXCEL
+# =========================================================
 
+def generar_excel(resultado):
     salida = io.BytesIO()
 
     with pd.ExcelWriter(
@@ -335,12 +320,12 @@ def generar_excel(resultado):
             sheet_name="Malla Procesada"
         )
 
-        hoja = writer.sheets["Malla Procesada"]
+        hoja = writer.sheets[
+            "Malla Procesada"
+        ]
 
-        # Ajustar anchos de columnas
         for columna in hoja.columns:
-
-            largo_maximo = max(
+            largo = max(
                 len(str(celda.value))
                 if celda.value is not None
                 else 0
@@ -348,7 +333,7 @@ def generar_excel(resultado):
             )
 
             ancho = min(
-                largo_maximo + 2,
+                largo + 2,
                 30
             )
 
@@ -361,17 +346,20 @@ def generar_excel(resultado):
     return salida
 
 
-def mostrar_mallas_xblast():
+# =========================================================
+# INTERFAZ STREAMLIT
+# =========================================================
 
+def mostrar_mallas_xblast():
     st.subheader(
-        "MALLAS X-BLAST | Procesamiento de planos de perforación"
+        "MALLAS X-BLAST | Procesamiento de mallas"
     )
 
     st.write(
-        "Carga un archivo CSV exportado desde X-BLAST para limpiar "
-        "encabezados repetidos, crear el ID único de cada pozo, "
-        "convertir el diámetro de pulgadas a milímetros y generar "
-        "una planilla Excel lista para trabajar."
+        "Carga un archivo CSV exportado desde X-BLAST. "
+        "La herramienta limpia los registros, crea el ID POZO, "
+        "convierte el diámetro de perforación a milímetros "
+        "y genera un archivo Excel procesado."
     )
 
     st.divider()
@@ -383,37 +371,34 @@ def mostrar_mallas_xblast():
     )
 
     if archivo is None:
-
         st.info(
             "Carga un archivo CSV para comenzar."
         )
-
         return
 
     try:
-
-        df_original = leer_csv_xblast(
+        df = leer_csv_xblast(
             archivo
         )
 
-        resultado, filas_eliminadas = procesar_malla_xblast(
-            df_original
+        resultado, filas_eliminadas = (
+            procesar_malla_xblast(df)
         )
 
         if resultado.empty:
-
             st.warning(
-                "El archivo no contiene registros válidos "
-                "después del procesamiento."
+                "No se encontraron registros válidos."
             )
-
             return
 
         st.success(
             "Archivo procesado correctamente."
         )
 
-        # Indicadores
+        # -------------------------------------------------
+        # INDICADORES
+        # -------------------------------------------------
+
         c1, c2, c3, c4 = st.columns(4)
 
         c1.metric(
@@ -422,16 +407,20 @@ def mostrar_mallas_xblast():
         )
 
         c2.metric(
-            "Encabezados/filas eliminadas",
+            "Filas eliminadas",
             f"{filas_eliminadas:,}"
+        )
+
+        cantidad_mallas = (
+            resultado["ID POZO"]
+            .str.rsplit("_", n=1)
+            .str[0]
+            .nunique()
         )
 
         c3.metric(
             "Mallas detectadas",
-            resultado["ID POZO"]
-            .str.split("_")
-            .str[0]
-            .nunique()
+            cantidad_mallas
         )
 
         c4.metric(
@@ -439,8 +428,12 @@ def mostrar_mallas_xblast():
             len(resultado.columns)
         )
 
+        # -------------------------------------------------
+        # VISTA PREVIA
+        # -------------------------------------------------
+
         st.subheader(
-            "2. Vista previa del resultado"
+            "2. Vista previa"
         )
 
         st.dataframe(
@@ -449,7 +442,10 @@ def mostrar_mallas_xblast():
             hide_index=True
         )
 
-        # Crear Excel
+        # -------------------------------------------------
+        # DESCARGA
+        # -------------------------------------------------
+
         archivo_excel = generar_excel(
             resultado
         )
@@ -464,7 +460,7 @@ def mostrar_mallas_xblast():
         )
 
         st.download_button(
-            label="⬇ Descargar malla procesada en Excel",
+            "⬇ Descargar malla procesada",
             data=archivo_excel,
             file_name=nombre_salida,
             mime=(
@@ -475,7 +471,6 @@ def mostrar_mallas_xblast():
         )
 
     except Exception as error:
-
         st.error(
             f"No fue posible procesar el archivo: {error}"
         )
