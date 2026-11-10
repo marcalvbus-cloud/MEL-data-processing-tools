@@ -13,7 +13,22 @@ st.set_page_config(
     layout="wide"
 )
 
+# =========================================================
+# BOTÓN VOLVER AL MENÚ
+# =========================================================
 
+if (
+    "herramienta_seleccionada" in st.session_state
+    and
+    st.session_state.herramienta_seleccionada
+    != "Seleccione una herramienta..."
+):
+    st.button(
+        "← Back to menu",
+        type="secondary",
+        on_click=volver_menu
+    )
+    
 # =========================================================
 # PORTADA
 # =========================================================
@@ -51,16 +66,6 @@ herramienta = st.selectbox(
     ],
     key="herramienta_seleccionada"
 )
-
-
-# =========================================================
-# FUNCIÓN VOLVER AL MENÚ
-# =========================================================
-
-def volver_menu():
-    st.session_state.herramienta_seleccionada = (
-        "Seleccione una herramienta..."
-    )
 
 
 # =========================================================
