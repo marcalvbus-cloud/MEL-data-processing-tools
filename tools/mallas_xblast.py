@@ -447,9 +447,10 @@ def mostrar_mallas_xblast():
         # DESCARGA
         # -------------------------------------------------
 
-        archivo_excel = generar_excel(
-            resultado
-        )
+        archivo_csv = resultado.to_csv(
+            index=False,
+            encoding="utf-8-sig"
+        ).encode("utf-8-sig")
 
         nombre_original = archivo.name.rsplit(
             ".",
@@ -457,17 +458,14 @@ def mostrar_mallas_xblast():
         )[0]
 
         nombre_salida = (
-            f"{nombre_original}_PROCESADO.xlsx"
+            f"{nombre_original}_PROCESADO.csv"
         )
 
         st.download_button(
-            "⬇ Descargar malla procesada",
-            data=archivo_excel,
+            "⬇ Descargar malla procesada CSV",
+            data=archivo_csv,
             file_name=nombre_salida,
-            mime=(
-                "application/vnd.openxmlformats-officedocument."
-                "spreadsheetml.sheet"
-            ),
+            mime="text/csv",
             type="primary"
         )
 
