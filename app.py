@@ -8,8 +8,9 @@ st.set_page_config(
     layout="wide"
 )
 
-st.title("MEL Data Processing Tools")
-st.subheader("TONNAGE | Tonelaje diario por pala")
+st.image("assets/banner.jpg", use_container_width=True)
+
+st.subheader("TONELAJE_PALAS | Tonelaje diario por pala")
 
 st.write(
     "Carga el archivo base MD, selecciona un rango de fechas y obtén "
