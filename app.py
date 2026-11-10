@@ -66,18 +66,57 @@ if "herramienta_seleccionada" not in st.session_state:
 
 
 # =========================================================
+# SELECTOR DE ÁREA
+# =========================================================
+
+def cambiar_area():
+    st.session_state.herramienta_seleccionada = (
+        "Seleccione una herramienta..."
+    )
+
+area = st.selectbox(
+    "Área",
+    [
+        "Seleccione un área...",
+        "QAQC",
+        "Secuencia",
+        "Diseño",
+        "X-Energy"
+    ],
+    key="area_seleccionada",
+    on_change=cambiar_area
+)
+
+
+# =========================================================
+# HERRAMIENTAS DISPONIBLES POR ÁREA
+# =========================================================
+
+herramientas_por_area = {
+    "Seleccione un área...": [],
+    "QAQC": [
+        "TONELAJE_PALAS",
+        "MALLAS X-BLAST"
+    ],
+    "Secuencia": [],
+    "Diseño": [],
+    "X-Energy": []
+}
+
+
+# =========================================================
 # SELECTOR DE HERRAMIENTAS
 # =========================================================
 
 st.markdown("### Seleccionar herramienta de procesamiento")
 
+opciones_herramientas = [
+    "Seleccione una herramienta..."
+] + herramientas_por_area.get(area, [])
+
 herramienta = st.selectbox(
     "Herramienta",
-    [
-    "Seleccione una herramienta...",
-    "TONELAJE_PALAS",
-    "MALLAS X-BLAST"
-],
+    opciones_herramientas,
     key="herramienta_seleccionada"
 )
 
