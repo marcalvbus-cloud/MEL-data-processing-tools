@@ -54,6 +54,16 @@ herramienta = st.selectbox(
 
 
 # =========================================================
+# FUNCIÓN VOLVER AL MENÚ
+# =========================================================
+
+def volver_menu():
+    st.session_state.herramienta_seleccionada = (
+        "Seleccione una herramienta..."
+    )
+
+
+# =========================================================
 # EJECUCIÓN DE HERRAMIENTAS
 # =========================================================
 
@@ -61,15 +71,11 @@ if herramienta != "Seleccione una herramienta...":
 
     st.divider()
 
-    # Botón para regresar al menú
-    if st.button(
+    st.button(
         "← Back to menu",
-        type="secondary"
-    ):
-        st.session_state.herramienta_seleccionada = (
-            "Seleccione una herramienta..."
-        )
-        st.rerun()
+        type="secondary",
+        on_click=volver_menu
+    )
 
     if herramienta == "TONELAJE_PALAS":
         mostrar_tonelaje_palas()
