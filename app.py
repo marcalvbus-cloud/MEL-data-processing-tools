@@ -1,6 +1,7 @@
 import streamlit as st
 
 from tools.tonelaje_palas import mostrar_tonelaje_palas
+from tools.mallas_xblast import mostrar_mallas_xblast
 
 
 # =========================================================
@@ -73,9 +74,10 @@ st.markdown("### Seleccionar herramienta de procesamiento")
 herramienta = st.selectbox(
     "Herramienta",
     [
-        "Seleccione una herramienta...",
-        "TONELAJE_PALAS"
-    ],
+    "Seleccione una herramienta...",
+    "TONELAJE_PALAS",
+    "MALLAS X-BLAST"
+],
     key="herramienta_seleccionada"
 )
 
@@ -86,3 +88,6 @@ herramienta = st.selectbox(
 
 if herramienta == "TONELAJE_PALAS":
     mostrar_tonelaje_palas()
+
+elif herramienta == "MALLAS X-BLAST":
+    mostrar_mallas_xblast()
