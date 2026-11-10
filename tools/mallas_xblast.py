@@ -128,15 +128,16 @@ def procesar_malla_xblast(df):
         for columna in df.columns
     ]
 
-    col_pozo = buscar_columna(
-        df.columns,
-        [
-            "N°POZO",
-            "NºPOZO",
-            "NPOZO",
-            "POZO"
-        ]
-    )
+  col_pozo = buscar_columna(
+    df.columns,
+    [
+        "N°POZO",
+        "NºPOZO",
+        "NРPOZO",
+        "NPOZO",
+        "POZO"
+    ]
+)
 
     col_este = buscar_columna(
         df.columns,
