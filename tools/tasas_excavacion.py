@@ -31,67 +31,77 @@ def detectar_hojas(archivo):
             df = pd.read_excel(archivo, sheet_name=hoja)
             columnas = set(df.columns.astype(str))
 
-            if columnas_historicas.issubset(columnas):
+           if columnas_historicas.issubset(columnas):
 
                 fechas = pd.to_datetime(
-    df["FECHA"],
-    errors="coerce"
-)
+                    df["FECHA"],
+                    errors="coerce"
+                )
 
-tone = pd.to_numeric(df["TONE"], errors="coerce")
-et = pd.to_numeric(df["ET"], errors="coerce")
-tasa_reportada = pd.to_numeric(
-    df["TASAEXCA"],
-    errors="coerce"
-)
+                tone = pd.to_numeric(
+                    df["TONE"],
+                    errors="coerce"
+                )
 
-# Solo se pueden evaluar registros con datos válidos
-validos = (
-    tone.notna()
-    & et.notna()
-    & tasa_reportada.notna()
-    & (et > 0)
-)
+                et = pd.to_numeric(
+                    df["ET"],
+                    errors="coerce"
+                )
 
-tasa_calculada = tone / et
+                tasa_reportada = pd.to_numeric(
+                    df["TASAEXCA"],
+                    errors="coerce"
+                )
 
-# Diferencia porcentual entre tasa reportada y calculada
-diferencia_pct = (
-    (tasa_reportada - tasa_calculada).abs()
-    / tasa_calculada.abs()
-    * 100
-)
+                validos = (
+                    tone.notna()
+                    & et.notna()
+                    & tasa_reportada.notna()
+                    & (et > 0)
+                )
 
-# Consideramos consistente una diferencia <= 1 %
-consistentes = validos & (diferencia_pct <= 1)
+                tasa_calculada = tone / et
 
-n_validos = int(validos.sum())
-n_consistentes = int(consistentes.sum())
+                diferencia_pct = (
+                    (tasa_reportada - tasa_calculada).abs()
+                    / tasa_calculada.abs()
+                    * 100
+                )
 
-if n_validos > 0:
-    coincidencia = (
-        n_consistentes / n_validos
-    ) * 100
-else:
-    coincidencia = 0
+                consistentes = (
+                    validos
+                    & (diferencia_pct <= 1)
+                )
 
-estado = (
-    "Consistente"
-    if coincidencia >= 99
-    else "Revisar"
-)
+                n_validos = int(validos.sum())
+                n_consistentes = int(consistentes.sum())
 
-hojas_detectadas.append({
-    "Hoja": hoja,
-    "Formato": "Histórico MEL",
-    "Fecha inicial": fechas.min(),
-    "Fecha final": fechas.max(),
-    "Registros": len(df),
-    "Registros evaluados": n_validos,
-    "Coincidencia TASAEXCA (%)": round(coincidencia, 2),
-    "Estado": estado
-})
+                if n_validos > 0:
+                    coincidencia = (
+                        n_consistentes / n_validos
+                    ) * 100
+                else:
+                    coincidencia = 0
 
+                estado = (
+                    "Consistente"
+                    if coincidencia >= 99
+                    else "Revisar"
+                )
+
+                hojas_detectadas.append({
+                    "Hoja": hoja,
+                    "Formato": "Histórico MEL",
+                    "Fecha inicial": fechas.min(),
+                    "Fecha final": fechas.max(),
+                    "Registros": len(df),
+                    "Registros evaluados": n_validos,
+                    "Coincidencia TASAEXCA (%)": round(
+                        coincidencia,
+                        2
+                    ),
+                    "Estado": estado
+                })
             elif columnas_nuevas.issubset(columnas):
 
                 fechas = pd.to_datetime(
