@@ -2,42 +2,69 @@ import streamlit as st
 import pandas as pd
 
 
-def detectar_formato(archivo):
+def detectar_hojas(archivo):
     excel = pd.ExcelFile(archivo)
+    hojas_detectadas = []
+
+    columnas_historicas = {
+        "FECHA",
+        "PALA",
+        "TONE",
+        "RENDNUEV",
+        "TASAEXCA",
+        "ERN",
+        "ET"
+    }
+
+    columnas_nuevas = {
+        "Fecha1",
+        "Pala1",
+        "Toneladas",
+        "RendNuevo",
+        "TasaExc",
+        "ER"
+    }
 
     for hoja in excel.sheet_names:
-        df = pd.read_excel(archivo, sheet_name=hoja)
 
-        columnas = set(df.columns.astype(str))
+        try:
+            df = pd.read_excel(archivo, sheet_name=hoja)
+            columnas = set(df.columns.astype(str))
 
-        # Formato histórico MEL
-        columnas_historicas = {
-            "FECHA",
-            "PALA",
-            "TONE",
-            "RENDNUEV",
-            "TASAEXCA",
-            "ERN",
-            "ET"
-        }
+            if columnas_historicas.issubset(columnas):
 
-        if columnas_historicas.issubset(columnas):
-            return "Histórico MEL", hoja, df
+                fechas = pd.to_datetime(
+                    df["FECHA"],
+                    errors="coerce"
+                )
 
-        # Formato nuevas palas
-        columnas_nuevas = {
-            "Fecha1",
-            "Pala1",
-            "Toneladas",
-            "RendNuevo",
-            "TasaExc",
-            "ER"
-        }
+                hojas_detectadas.append({
+                    "Hoja": hoja,
+                    "Formato": "Histórico MEL",
+                    "Fecha inicial": fechas.min(),
+                    "Fecha final": fechas.max(),
+                    "Registros": len(df)
+                })
 
-        if columnas_nuevas.issubset(columnas):
-            return "Nuevas palas", hoja, df
+            elif columnas_nuevas.issubset(columnas):
 
-    return "No reconocido", None, None
+                fechas = pd.to_datetime(
+                    df["Fecha1"],
+                    errors="coerce"
+                )
+
+                hojas_detectadas.append({
+                    "Hoja": hoja,
+                    "Formato": "Nuevas palas",
+                    "Fecha inicial": fechas.min(),
+                    "Fecha final": fechas.max(),
+                    "Registros": len(df)
+                })
+
+        except Exception:
+            continue
+
+    return hojas_detectadas
 
 
 def mostrar():
@@ -61,19 +88,38 @@ def mostrar():
         for archivo in archivos:
 
             try:
-                formato, hoja, df = detectar_formato(archivo)
+                hojas = detectar_hojas(archivo)
 
                 st.write(f"**Archivo:** {archivo.name}")
 
-                if formato == "No reconocido":
+                if not hojas:
                     st.warning(
-                        "No se encontró una estructura de indicadores reconocida."
+                        "No se encontraron hojas con una estructura "
+                        "de indicadores reconocida."
                     )
 
                 else:
-                    st.success(f"Formato detectado: {formato}")
-                    st.write(f"Hoja detectada: {hoja}")
-                    st.write(f"Registros encontrados: {len(df):,}")
+                    st.success(
+                        f"Hojas de indicadores detectadas: {len(hojas)}"
+                    )
+
+                    resumen = pd.DataFrame(hojas)
+
+                    resumen["Fecha inicial"] = (
+                        resumen["Fecha inicial"]
+                        .dt.strftime("%d-%m-%Y")
+                    )
+
+                    resumen["Fecha final"] = (
+                        resumen["Fecha final"]
+                        .dt.strftime("%d-%m-%Y")
+                    )
+
+                    st.dataframe(
+                        resumen,
+                        use_container_width=True,
+                        hide_index=True
+                    )
 
                 st.divider()
 
