@@ -34,17 +34,63 @@ def detectar_hojas(archivo):
             if columnas_historicas.issubset(columnas):
 
                 fechas = pd.to_datetime(
-                    df["FECHA"],
-                    errors="coerce"
-                )
+    df["FECHA"],
+    errors="coerce"
+)
 
-                hojas_detectadas.append({
-                    "Hoja": hoja,
-                    "Formato": "Histórico MEL",
-                    "Fecha inicial": fechas.min(),
-                    "Fecha final": fechas.max(),
-                    "Registros": len(df)
-                })
+tone = pd.to_numeric(df["TONE"], errors="coerce")
+et = pd.to_numeric(df["ET"], errors="coerce")
+tasa_reportada = pd.to_numeric(
+    df["TASAEXCA"],
+    errors="coerce"
+)
+
+# Solo se pueden evaluar registros con datos válidos
+validos = (
+    tone.notna()
+    & et.notna()
+    & tasa_reportada.notna()
+    & (et > 0)
+)
+
+tasa_calculada = tone / et
+
+# Diferencia porcentual entre tasa reportada y calculada
+diferencia_pct = (
+    (tasa_reportada - tasa_calculada).abs()
+    / tasa_calculada.abs()
+    * 100
+)
+
+# Consideramos consistente una diferencia <= 1 %
+consistentes = validos & (diferencia_pct <= 1)
+
+n_validos = int(validos.sum())
+n_consistentes = int(consistentes.sum())
+
+if n_validos > 0:
+    coincidencia = (
+        n_consistentes / n_validos
+    ) * 100
+else:
+    coincidencia = 0
+
+estado = (
+    "Consistente"
+    if coincidencia >= 99
+    else "Revisar"
+)
+
+hojas_detectadas.append({
+    "Hoja": hoja,
+    "Formato": "Histórico MEL",
+    "Fecha inicial": fechas.min(),
+    "Fecha final": fechas.max(),
+    "Registros": len(df),
+    "Registros evaluados": n_validos,
+    "Coincidencia TASAEXCA (%)": round(coincidencia, 2),
+    "Estado": estado
+})
 
             elif columnas_nuevas.issubset(columnas):
 
