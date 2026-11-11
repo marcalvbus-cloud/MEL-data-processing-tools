@@ -100,7 +100,9 @@ herramientas_por_area = {
     ],
     "Secuencia": [],
     "Diseño": [],
-    "X-Energy": []
+   "X-Energy": [
+    "TASAS DE EXCAVACIÓN"
+]
 }
 
 
