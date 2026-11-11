@@ -26,12 +26,11 @@ def detectar_hojas(archivo):
     }
 
     for hoja in excel.sheet_names:
-
         try:
             df = pd.read_excel(archivo, sheet_name=hoja)
             columnas = set(df.columns.astype(str))
 
-           if columnas_historicas.issubset(columnas):
+            if columnas_historicas.issubset(columnas):
 
                 fechas = pd.to_datetime(
                     df["FECHA"],
@@ -58,6 +57,7 @@ def detectar_hojas(archivo):
                     & et.notna()
                     & tasa_reportada.notna()
                     & (et > 0)
+                    & (tasa_reportada > 0)
                 )
 
                 tasa_calculada = tone / et
@@ -83,11 +83,10 @@ def detectar_hojas(archivo):
                 else:
                     coincidencia = 0
 
-                estado = (
-                    "Consistente"
-                    if coincidencia >= 99
-                    else "Revisar"
-                )
+                if coincidencia >= 99:
+                    estado = "Consistente"
+                else:
+                    estado = "Revisar"
 
                 hojas_detectadas.append({
                     "Hoja": hoja,
@@ -102,6 +101,7 @@ def detectar_hojas(archivo):
                     ),
                     "Estado": estado
                 })
+
             elif columnas_nuevas.issubset(columnas):
 
                 fechas = pd.to_datetime(
@@ -114,7 +114,10 @@ def detectar_hojas(archivo):
                     "Formato": "Nuevas palas",
                     "Fecha inicial": fechas.min(),
                     "Fecha final": fechas.max(),
-                    "Registros": len(df)
+                    "Registros": len(df),
+                    "Registros evaluados": None,
+                    "Coincidencia TASAEXCA (%)": None,
+                    "Estado": "Pendiente de homologación"
                 })
 
         except Exception:
@@ -161,15 +164,15 @@ def mostrar():
 
                     resumen = pd.DataFrame(hojas)
 
-                    resumen["Fecha inicial"] = (
-                        resumen["Fecha inicial"]
-                        .dt.strftime("%d-%m-%Y")
-                    )
+                    resumen["Fecha inicial"] = pd.to_datetime(
+                        resumen["Fecha inicial"],
+                        errors="coerce"
+                    ).dt.strftime("%d-%m-%Y")
 
-                    resumen["Fecha final"] = (
-                        resumen["Fecha final"]
-                        .dt.strftime("%d-%m-%Y")
-                    )
+                    resumen["Fecha final"] = pd.to_datetime(
+                        resumen["Fecha final"],
+                        errors="coerce"
+                    ).dt.strftime("%d-%m-%Y")
 
                     st.dataframe(
                         resumen,
