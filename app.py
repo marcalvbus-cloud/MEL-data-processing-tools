@@ -2,6 +2,7 @@ import streamlit as st
 
 from tools.tonelaje_palas import mostrar_tonelaje_palas
 from tools.mallas_xblast import mostrar_mallas_xblast
+from tools.tasas_excavacion import mostrar
 
 
 # =========================================================
@@ -132,3 +133,6 @@ if herramienta == "TONELAJE_PALAS":
 
 elif herramienta == "MALLAS X-BLAST":
     mostrar_mallas_xblast()
+
+elif herramienta == "TASAS DE EXCAVACIÓN":
+    mostrar()
